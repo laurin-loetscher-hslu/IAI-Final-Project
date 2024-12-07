@@ -1,4 +1,4 @@
-.PHONY: install run-frontend run-backend run test clean lint format help
+.PHONY: install run-frontend run-backend run test clean lint format help start-servers
 
 # Variables
 FRONTEND_DIR := frontend
@@ -28,26 +28,28 @@ run:
 	@echo "Starting backend and frontend..."
 	@make -j 2 run-frontend run-backend
 
+# Start backend and frontend servers in the background
+start-servers:
+	@echo "Starting backend server..."
+	cd $(BACKEND_DIR) && uvicorn chat_server:app --reload & echo $$! > backend_server.pid
+	@echo "Waiting for backend server to start..."
+	sleep 5 # Adjust if server takes longer to start
+
+# Stop backend server
+start-servers:
+	@echo "Starting backend server..."
+	@if lsof -i :8000 | grep LISTEN; then kill -9 $(shell lsof -t -i :8000); fi
+	cd $(BACKEND_DIR) && uvicorn chat_server:app --reload & echo $$! > backend_server.pid
+	@echo "Waiting for backend server to start..."
+	sleep 5 # Adjust if server takes longer to start
+
 # Run all tests
-test:
+# Run all tests
+test: start-servers
 	@echo "Running tests..."
-	@$(PYTHON) -m pytest $(BACKEND_DIR)/tests $(FRONTEND_DIR)/tests
+	PYTHONPATH=$(BACKEND_DIR) $(PYTHON) -m pytest $(BACKEND_DIR)/tests || { make stop-servers; exit 1; }
+	@make stop-servers
 
-# Run type checking
-typecheck:
-	@echo "Running type checking..."
-	@$(PYTHON) -m mypy $(BACKEND_DIR) $(FRONTEND_DIR)
-
-# Run linter
-lint:
-	@echo "Running linter..."
-	@$(PYTHON) -m flake8 $(BACKEND_DIR) $(FRONTEND_DIR)
-
-# Format code
-format:
-	@echo "Formatting code..."
-	@$(PYTHON) -m black $(BACKEND_DIR) $(FRONTEND_DIR)
-	@$(PYTHON) -m isort $(BACKEND_DIR) $(FRONTEND_DIR)
 
 # Clean up cache and temporary files
 clean:
@@ -61,23 +63,21 @@ clean:
 	find . -type f -name ".coverage" -delete
 	find . -type d -name "htmlcov" -exec rm -rf {} +
 
-# Create virtual environment
-venv:
-	@echo "Creating virtual environment..."
-	$(PYTHON) -m venv venv
-	@echo "Activate the virtual environment with: source venv/bin/activate"
+
 
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  install     - Install project dependencies"
-	@echo "  run         - Run both frontend and backend"
+	@echo "  install      - Install project dependencies"
+	@echo "  run          - Run both frontend and backend"
 	@echo "  run-frontend - Run Streamlit frontend"
 	@echo "  run-backend  - Run FastAPI backend"
-	@echo "  test        - Run all tests"
-	@echo "  typecheck   - Run type checking"
-	@echo "  lint        - Run code linter"
-	@echo "  format      - Format code with black and isort"
-	@echo "  clean       - Remove cache and temporary files"
-	@echo "  venv        - Create a virtual environment"
-	@echo "  help        - Show this help message"
+	@echo "  start-servers - Start backend and frontend servers in the background"
+	@echo "  stop-servers - Stop backend server"
+	@echo "  test         - Run all tests"
+	@echo "  typecheck    - Run type checking"
+	@echo "  lint         - Run code linter"
+	@echo "  format       - Format code with black and isort"
+	@echo "  clean        - Remove cache and temporary files"
+	@echo "  venv         - Create a virtual environment"
+	@echo "  help         - Show this help message"

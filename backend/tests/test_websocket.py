@@ -2,8 +2,14 @@ import asyncio
 import pytest
 import websockets
 from fastapi.testclient import TestClient
-from ..chat_server import app, connected_clients
+import os
 
+
+# Import the app and connected_clients from the backend package
+from backend.chat_server import app, connected_clients
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # Create a test client
 client = TestClient(app)
@@ -14,10 +20,10 @@ async def test_websocket_message_transmission():
     Test that a message sent through WebSocket is broadcast to all clients
     """
     # Create multiple WebSocket connections
-    uri = "ws://localhost:8000/chat"  # Use the correct port where FastAPI is running
-
+    WEBSOCKET_URI = os.getenv("WEBSOCKET_URI")
+    #WEBSOCKET_URI = "ws://localhost:8000/chat"
     async def create_client():
-        return await websockets.connect(uri)
+        return await websockets.connect(WEBSOCKET_URI)
 
     # Create 3 client connections
     clients = [await create_client() for _ in range(3)]
@@ -55,11 +61,11 @@ async def test_websocket_connection():
     """
     Test WebSocket connection and ensure it is functional.
     """
-    # Server URI (update as needed to match your configuration)
-    uri = "ws://localhost:8000/chat"
+    #WEBSOCKET_URI = "ws://localhost:8000/chat"
+    WEBSOCKET_URI = os.getenv("WEBSOCKET_URI")
 
     # Connect to the WebSocket server
-    async with websockets.connect(uri) as websocket:
+    async with websockets.connect(WEBSOCKET_URI) as websocket:
         # Send a simple message to verify the connection
         test_message = "Hello, this is a test!"
         await websocket.send(test_message)
@@ -76,17 +82,18 @@ async def test_disconnect_handling():
     """
     Test that the server properly handles WebSocket client disconnection.
     """
-    uri = "ws://localhost:8000/chat"
+    # WEBSOCKET_URI = "ws://localhost:8000/chat"
+    WEBSOCKET_URI = os.getenv("WEBSOCKET_URI")
 
     # Step 1: Connect to the WebSocket server
-    async with websockets.connect(uri) as websocket:
+    async with websockets.connect(WEBSOCKET_URI) as websocket:
         # Verify the connection was established
         initial_message = "Testing disconnection handling"
         await websocket.send(initial_message)
         response = await websocket.recv()
         assert response == initial_message, "Server did not echo the initial message"
 
-        # At this point, the connection should be active. (Simulating client in active state)
+        # At this point, the connection should be active.
 
     # Step 2: The `async with` block ends here, closing the WebSocket connection.
     # After the above block, the client disconnects.
@@ -94,9 +101,7 @@ async def test_disconnect_handling():
     # Step 3: Verify that the server handled the disconnection
     # In a real implementation, you might check the server's state through logs,
     # a status endpoint, or by reconnecting with another client to confirm the previous client was removed.
-
-    # Simulate reconnection or checking the server's internal state
-    async with websockets.connect(uri) as websocket2:
+    async with websockets.connect(WEBSOCKET_URI) as websocket2:
         # Send a "status check" or similar message
         await websocket2.send("Check connected clients")
         status_response = await websocket2.recv()

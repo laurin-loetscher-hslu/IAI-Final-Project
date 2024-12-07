@@ -4,6 +4,11 @@ import websockets
 import uuid
 
 
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.user_disabled = False
@@ -14,19 +19,21 @@ username = st.text_input(
     disabled=st.session_state.user_disabled,
     on_change=lambda: setattr(st.session_state, "user_disabled", True)
 )
+WEBSOCKET_URI = os.getenv("WEBSOCKET_URI")
+#WS_URL = "ws://localhost:8000/chat"
 
-WS_URL = "ws://localhost:8000/chat"
-
+if WEBSOCKET_URI is None:
+    raise ValueError("WEBSOCKET_URI environment variable is not set!")
 USER_ID = uuid.uuid1()
 
 
 async def send_message(message):
-    async with websockets.connect(WS_URL) as websocket:
+    async with websockets.connect(WEBSOCKET_URI) as websocket:
         await websocket.send(f"{username if username else 'Anonymus'}: {message}")
 
 
 async def connect_and_listen():
-    async with websockets.connect(WS_URL) as websocket:
+    async with websockets.connect(WEBSOCKET_URI) as websocket:
         try:
             while True:
                 response = await websocket.recv()

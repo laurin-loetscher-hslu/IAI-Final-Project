@@ -17,4 +17,5 @@ async def chat(websocket: WebSocket):
             for client in connected_clients:
                 await client.send_text(data)
     except WebSocketDisconnect:
-        connected_clients.remove(websocket)
+        if websocket in connected_clients:
+            connected_clients.remove(websocket)

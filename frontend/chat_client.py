@@ -20,7 +20,7 @@ username = st.text_input(
     on_change=lambda: setattr(st.session_state, "user_disabled", True)
 )
 WEBSOCKET_URI = os.getenv("WEBSOCKET_URI")
-#WS_URL = "ws://localhost:8000/chat"
+# WS_URL = "ws://localhost:8000/chat"
 
 if WEBSOCKET_URI is None:
     raise ValueError("WEBSOCKET_URI environment variable is not set!")
@@ -38,7 +38,8 @@ async def connect_and_listen():
             while True:
                 response = await websocket.recv()
                 st.session_state.messages.append(
-                    {"role": "assistant", "content": response})
+                    {"role": "assistant", "content": response}
+                )
                 st.rerun()
         except websockets.ConnectionClosed:
             st.error("Disconnected from server")
